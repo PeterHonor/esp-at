@@ -27,6 +27,7 @@ TCP/IP AT 命令
 -  :ref:`AT+CIUPDATE <cmd-UPDATE>`：通过 Wi-Fi 升级固件
 -  :ref:`AT+CIPDINFO <cmd-IPDINFO>`：设置 +IPD 消息详情
 -  :ref:`AT+CIPSSLCCONF <cmd-SSLCCONF>`：查询/设置 SSL 客户端配置
+-  :ref:`AT+CIPSSLCCIPHER <cmd-SSLCCIPHER>`：查询/设置 SSL 客户端的密码套件 (cipher suite)
 -  :ref:`AT+CIPSSLCCN <cmd-SSLCCN>`：查询/设置 SSL 客户端的公用名 (common name)
 -  :ref:`AT+CIPSSLCSNI <cmd-SSLCSNI>`：查询/设置 SSL 客户端的 SNI
 -  :ref:`AT+CIPSSLCALPN <cmd-SSLCALPN>`：查询/设置 SSL 客户端 ALPN
@@ -1473,6 +1474,87 @@ ESP-AT 在运行时，通过 Wi-Fi 从指定的服务器上下载新固件到某
 
 -  如果想要本配置立即生效，请在建立 SSL 连接前运行本命令。
 -  配置更改将保存在 NVS 区，如果您使用 :ref:`AT+SAVETRANSLINK <cmd-SAVET>` 命令设置开机进入 Wi-Fi SSL :term:`透传模式`，ESP 将在下次上电时基于本配置建立 SSL 连接。
+
+.. _cmd-SSLCCIPHER:
+
+:ref:`AT+CIPSSLCCIPHER <TCPIP-AT>`：查询/设置 SSL 客户端的密码套件 (cipher suite)
+------------------------------------------------------------------------------------------
+
+查询命令
+^^^^^^^^
+
+**功能：**
+
+查询 ESP 作为 SSL 客户端时设备支持的密码套件（设备能力，而非各连接上已配置的套件）
+
+**命令：**
+
+::
+
+    AT+CIPSSLCCIPHER?
+
+**响应：**
+
+::
+
+    +CIPSSLCCIPHER:<idx>,<cipher_suite>
+    ...
+
+    OK
+
+若设备支持多个密码套件，可能多次输出 ``+CIPSSLCCIPHER:<idx>,<cipher_suite>``。
+
+设置命令
+^^^^^^^^
+
+**功能：**
+
+按连接设置 SSL 客户端在 ClientHello 中使用的密码套件
+
+**命令：**
+
+::
+
+    // 单连接：(AT+CIPMUX=0)
+    AT+CIPSSLCCIPHER=<counts>[,<cipher_suite>][...][,<cipher_suite>]
+
+    // 多连接：(AT+CIPMUX=1)
+    AT+CIPSSLCCIPHER=<link ID>,<counts>[,<cipher_suite>][...][,<cipher_suite>]
+
+**响应：**
+
+::
+
+    OK
+
+参数
+^^^^
+
+- **<idx>**：密码套件的索引号，从 0 开始。
+- **<link ID>**：网络连接 ID (0 ~ max)，在多连接的情况下，若参数值设为 max，则表示所有连接，本参数默认值为 5。
+- **<counts>**：密码套件的数量。最大值受限于命令的最大长度 256 字节。
+
+  - 0: 清除已配置的密码套件。
+  - 其他值：设置密码套件的个数。
+
+- **<cipher_suite>**：表示 ClientHello 中的密码套件。对应的值定义在 `ssl_ciphersuites.h <https://github.com/espressif/mbedtls/blob/master/include/mbedtls/ssl_ciphersuites.h>`_ 中。
+
+说明
+^^^^
+
+- 查询命令列出的是设备支持的密码套件（能力），不是各连接上已配置的套件。
+- 如果想要设置命令的配置立即生效，请在建立 SSL 连接前运行本命令。
+
+示例
+^^^^
+
+::
+
+    // 单连接：(AT+CIPMUX=0)，密码套件为 TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256 和 TLS_ECDHE_ECDSA_WITH_AES_256_CCM
+    AT+CIPSSLCCIPHER=2,0xC023,0xC0AD
+
+    // 多连接：(AT+CIPMUX=1)，密码套件为 TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256 和 TLS_ECDHE_ECDSA_WITH_AES_256_CCM
+    AT+CIPSSLCCIPHER=0,2,0xC023,0xC0AD
 
 .. _cmd-SSLCCN:
 

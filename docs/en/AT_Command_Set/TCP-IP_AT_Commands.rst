@@ -27,6 +27,7 @@ TCP/IP AT Commands
 -  :ref:`AT+CIUPDATE <cmd-UPDATE>`: Upgrade the firmware through Wi-Fi.
 -  :ref:`AT+CIPDINFO <cmd-IPDINFO>`: Set "+IPD" message mode.
 -  :ref:`AT+CIPSSLCCONF <cmd-SSLCCONF>`: Query/Set SSL clients.
+-  :ref:`AT+CIPSSLCCIPHER <cmd-SSLCCIPHER>`: Query/Set the cipher suite of the SSL client.
 -  :ref:`AT+CIPSSLCCN <cmd-SSLCCN>`: Query/Set the Common Name of the SSL client.
 -  :ref:`AT+CIPSSLCSNI <cmd-SSLCSNI>`: Query/Set SSL client Server Name Indication (SNI).
 -  :ref:`AT+CIPSSLCALPN <cmd-SSLCALPN>`: Query/Set SSL client Application Layer Protocol Negotiation (ALPN).
@@ -1476,6 +1477,87 @@ Notes
 
 -  If you want this configuration to take effect immediately, run this command before establishing an SSL connection.
 -  The configuration changes will be saved in the NVS area. If you set the command :ref:`AT+SAVETRANSLINK <cmd-SAVET>` to enter SSL Wi-Fi :term:`Passthrough Mode` on power-up, the ESP device will establish an SSL connection based on this configuration when powered up next time.
+
+.. _cmd-SSLCCIPHER:
+
+:ref:`AT+CIPSSLCCIPHER <TCPIP-AT>`: Query or Set the Cipher Suite of the SSL Client
+------------------------------------------------------------------------------------
+
+Query Command
+^^^^^^^^^^^^^
+
+**Function:**
+
+Query the cipher suites supported by the ESP device as an SSL client (device capability, not the suites configured on each connection).
+
+**Command:**
+
+::
+
+    AT+CIPSSLCCIPHER?
+
+**Response:**
+
+::
+
+    +CIPSSLCCIPHER:<idx>,<cipher_suite>
+    ...
+
+    OK
+
+If the device supports multiple cipher suites, ``+CIPSSLCCIPHER:<idx>,<cipher_suite>`` may be printed multiple times.
+
+Set Command
+^^^^^^^^^^^
+
+**Function:**
+
+Configure the cipher suites used by the SSL client in ClientHello for a connection.
+
+**Command:**
+
+::
+
+    // Single connection: (AT+CIPMUX=0)
+    AT+CIPSSLCCIPHER=<counts>[,<cipher_suite>][...][,<cipher_suite>]
+
+    // Multiple connections: (AT+CIPMUX=1)
+    AT+CIPSSLCCIPHER=<link ID>,<counts>[,<cipher_suite>][...][,<cipher_suite>]
+
+**Response:**
+
+::
+
+    OK
+
+Parameters
+^^^^^^^^^^
+
+- **<idx>**: the index number of the cipher suite, starting from 0.
+- **<link ID>**: ID of the connection (0 ~ max). For multiple connections, if the value is max, it means all connections. By default, max is 5.
+- **<counts>**: number of cipher suites. The maximum value is limited by the maximum command length of 256 bytes.
+
+  - 0: Clear the configured cipher suites.
+  - Others: Set the number of cipher suites.
+
+- **<cipher_suite>**: the cipher suite in ClientHello. The corresponding values are defined in `ssl_ciphersuites.h <https://github.com/espressif/mbedtls/blob/master/include/mbedtls/ssl_ciphersuites.h>`_.
+
+Notes
+^^^^^
+
+- The query command lists the cipher suites supported by the device (capability), not the suites configured on each connection.
+- If you want the configuration of the set command to take effect immediately, run this command before establishing the SSL connection.
+
+Example
+^^^^^^^
+
+::
+
+    // Single connection: (AT+CIPMUX=0), cipher suites are TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256 and TLS_ECDHE_ECDSA_WITH_AES_256_CCM
+    AT+CIPSSLCCIPHER=2,0xC023,0xC0AD
+
+    // Multiple connections: (AT+CIPMUX=1), cipher suites are TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256 and TLS_ECDHE_ECDSA_WITH_AES_256_CCM
+    AT+CIPSSLCCIPHER=0,2,0xC023,0xC0AD
 
 .. _cmd-SSLCCN:
 
